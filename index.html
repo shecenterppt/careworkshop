@@ -19,9 +19,12 @@
         .floating-exp { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); font-weight: 700; font-size: 1.5rem; text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff; animation: floatUp 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; pointer-events: none; z-index: 50; }
         .glass-panel { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); }
         .chibi-card { transition: all 0.3s ease; }
+        .chibi-card:hover { transform: translateY(-5px); }
         .img-circle-glow { border-radius: 50%; border: 4px solid white; box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); background-color: #fff; object-fit: cover; }
         .rank-badge-container { position: absolute; top: -10px; right: -10px; z-index: 10; }
         .fallback-emoji { display: flex; align-items: center; justify-content: center; font-size: 2.5rem; background: white; border-radius: 50%; border: 4px solid rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); }
+        .toast-enter { animation: slideInRight 0.3s ease-out forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body class="text-gray-800 pb-20">
@@ -49,9 +52,72 @@
         <i class="fas fa-cog"></i>
     </button>
 
-    <!-- Modals (Join, Members, PIN, Admin) - รายละเอียดเหมือนเวอร์ชันก่อนหน้า แต่เพิ่มการเชื่อมต่อจริง -->
-    <!-- [Join Modal], [Members Modal], [PIN Modal], [Admin Modal] -->
-    <!-- (ขอละส่วน HTML ของ Modal ไว้เพื่อความสั้น แต่ฟังก์ชัน JS จะทำงานร่วมกับ Modal ID เดิมของคุณ) -->
+    <!-- 🔐 PIN Modal -->
+    <div id="pin-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 flex flex-col items-center shadow-2xl transform scale-95 transition-transform duration-300" id="pin-modal-content">
+            <div class="text-5xl mb-3 animate-chibi-fast">🔐</div>
+            <h2 class="text-2xl font-bold text-pink-600 mb-1">ยืนยันตัวตน</h2>
+            <p class="text-gray-500 mb-5 text-sm text-center">รหัสผ่านสำหรับผู้ดูแลระบบเท่านั้น (0000)</p>
+            <input type="password" id="admin-pin-input" maxlength="4" class="w-32 text-center text-3xl tracking-widest border-2 border-pink-200 rounded-xl p-3 outline-none focus:border-pink-500 mb-6 font-bold text-gray-700 shadow-inner" placeholder="••••">
+            <div class="flex gap-3 w-full">
+                <button onclick="closePinModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition">ยกเลิก</button>
+                <button onclick="verifyPin()" class="flex-1 bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl transition shadow-lg">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🛡️ Admin Panel Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden z-[60] flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="admin-modal-content">
+            <div class="bg-pink-100 p-5 flex justify-between items-center border-b border-pink-200">
+                <h2 class="text-2xl font-bold text-pink-600"><i class="fas fa-chess-queen mr-2"></i>ระบบจัดการกิลด์</h2>
+                <button onclick="closeAdminPanel()" class="text-gray-500 hover:text-red-500 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="flex border-b border-gray-200 overflow-x-auto">
+                <button onclick="switchTab('manage')" id="tab-manage" class="flex-1 whitespace-nowrap py-3 px-2 font-semibold text-pink-600 border-b-4 border-pink-400 bg-pink-50/50">จัดการ EXP</button>
+                <button onclick="switchTab('urls')" id="tab-urls" class="flex-1 whitespace-nowrap py-3 px-2 font-semibold text-gray-500 hover:bg-gray-50">จัดการ URL (ตามอันดับ)</button>
+                <button onclick="switchTab('add')" id="tab-add" class="flex-1 whitespace-nowrap py-3 px-2 font-semibold text-gray-500 hover:bg-gray-50">เพิ่มกิลด์ใหม่</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+                <div id="panel-manage" class="space-y-4"></div>
+                <div id="panel-urls" class="hidden space-y-4"></div>
+                <div id="panel-add" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">ชื่อกิลด์ <span class="text-red-500">*</span></label>
+                            <input type="text" id="add-name" class="w-full border-2 border-pink-200 rounded-xl p-3 outline-none focus:border-pink-500 text-lg" placeholder="กรอกชื่อกิลด์ที่นี่...">
+                        </div>
+                    </div>
+                    <button onclick="submitAddGuild()" class="w-full mt-2 bg-gradient-to-r from-pink-400 to-purple-400 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition text-lg">✨ สร้างกิลด์ใหม่ ✨</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🙋‍♂️ Join Modal -->
+    <div id="join-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 flex flex-col items-center shadow-2xl transform scale-95 transition-transform duration-300" id="join-modal-content">
+            <div class="text-5xl mb-3 animate-chibi-fast" id="join-modal-emoji">✨</div>
+            <h2 class="text-2xl font-bold text-pink-600 mb-1" id="join-modal-title">เข้าร่วมกิลด์</h2>
+            <p class="text-gray-500 mb-5 text-sm text-center">ระบุชื่อเล่นของคุณเพื่อเข้าร่วมกิลด์</p>
+            <input type="text" id="join-nickname-input" class="w-full text-center border-2 border-pink-200 rounded-xl p-3 outline-none focus:border-pink-500 mb-6 font-bold text-gray-700 shadow-inner" placeholder="ชื่อเล่น...">
+            <div class="flex gap-3 w-full">
+                <button onclick="closeJoinModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition">ยกเลิก</button>
+                <button onclick="submitJoinGuild()" class="flex-1 bg-gradient-to-r from-pink-400 to-purple-400 text-white font-bold py-3 rounded-xl shadow-lg">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📋 Members Modal -->
+    <div id="members-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl w-full max-w-md p-6 flex flex-col shadow-2xl transform scale-95 transition-transform duration-300 max-h-[80vh]" id="members-modal-content">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-xl font-bold text-blue-500 flex items-center gap-2"><i class="fas fa-users"></i> <span id="members-modal-title">สมาชิก</span></h2>
+                <button onclick="closeMembersModal()" class="text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            </div>
+            <div class="overflow-y-auto flex-1 space-y-2" id="members-list-container"></div>
+        </div>
+    </div>
 
     <script>
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFLwdZkQprErInEHTfzGuvbQzrGGs_WPYXWsOFaZeCRvE9BtZxAfyJadL5IgEyOURT/exec";
@@ -59,29 +125,32 @@
         let guildsData = [];
         let rankUrlsConfig = {};
         let guildMembers = JSON.parse(localStorage.getItem('chibi_guild_members')) || {};
+        let currentJoinGuildId = null;
 
-        document.addEventListener('DOMContentLoaded', fetchData);
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            document.getElementById('admin-pin-input').addEventListener('keypress', (e) => e.key === 'Enter' && verifyPin());
+        });
 
         async function fetchData() {
             try {
                 const response = await fetch(GAS_API_URL);
                 const result = await response.json();
                 if (result.status === 'success') {
-                    guildsData = result.teams;
-                    rankUrlsConfig = result.ranks;
+                    guildsData = result.teams || [];
+                    rankUrlsConfig = result.ranks || {};
                     renderLeaderboard();
                 }
             } catch (err) {
-                showToast("ไม่สามารถเชื่อมต่อคัมภีร์ได้ (Google Sheets)", "error");
+                showToast("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้ (โหมดจำลอง)", "error");
             }
         }
 
         async function callAPI(payload) {
             try {
-                // ใช้เทคนิคส่งแบบ text/plain เพื่อเลี่ยง CORS preflight
-                const response = await fetch(GAS_API_URL, {
+                await fetch(GAS_API_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // บันทึกข้อมูลได้แต่จะอ่านผลลัพธ์ไม่ได้
+                    mode: 'no-cors',
                     body: JSON.stringify(payload)
                 });
                 return { status: 'success' };
@@ -91,60 +160,287 @@
             }
         }
 
-        // ตัวอย่างฟังก์ชันบันทึก EXP
+        function renderLeaderboard() {
+            const top3Container = document.getElementById('top3-container');
+            const othersContainer = document.getElementById('others-container');
+            top3Container.innerHTML = '';
+            othersContainer.innerHTML = '';
+
+            const sorted = [...guildsData].sort((a, b) => b.score - a.score);
+            const top3 = sorted.slice(0, 3);
+            const others = sorted.slice(3);
+
+            const podiumOrder = [
+                { rank: 2, data: top3[1], badge: '🥈', h: 'h-48 md:h-56', size: 'w-20 h-20 md:w-24 md:h-24', order: 1 },
+                { rank: 1, data: top3[0], badge: '👑', h: 'h-56 md:h-64', size: 'w-24 h-24 md:w-28 md:h-28', order: 2, isCenter: true },
+                { rank: 3, data: top3[2], badge: '🥉', h: 'h-44 md:h-52', size: 'w-16 h-16 md:w-20 md:h-20', order: 3 }
+            ].sort((a,b) => a.order - b.order);
+
+            podiumOrder.forEach(slot => {
+                if (!slot.data) return;
+                const g = slot.data;
+                const rUrls = rankUrlsConfig[slot.rank] || { char: '', badge: '' };
+                const badgeHtml = rUrls.badge ? `<img src="${rUrls.badge}" class="w-10 h-10 glow-badge object-contain">` : `<div class="text-3xl glow-badge">${slot.badge}</div>`;
+                
+                top3Container.innerHTML += `
+                    <div id="guild-${g.id}" class="relative flex flex-col items-center justify-end w-28 md:w-40 ${slot.h} rounded-t-2xl border-2 border-white/50 shadow-lg transition transform hover:-translate-y-2" style="background-color: ${g.color}EE;">
+                        <div class="absolute -top-12 md:-top-16 flex flex-col items-center w-full">
+                            <div class="relative ${slot.isCenter ? 'animate-chibi' : 'animate-chibi-fast'}">
+                                <div class="rank-badge-container">${badgeHtml}</div>
+                                ${generateImageElement(rUrls.char, g.logo, slot.size)}
+                            </div>
+                        </div>
+                        <div class="text-center w-full p-2 pb-4 bg-white/30 rounded-t-xl mt-auto backdrop-blur-sm">
+                            <div class="font-bold text-gray-800 text-sm md:text-base truncate px-1">${g.name}</div>
+                            <div class="text-pink-600 font-extrabold text-lg mt-1"><i class="fas fa-star text-yellow-400"></i> ${g.score.toLocaleString()}</div>
+                            <div class="flex gap-2 justify-center mt-2">
+                                <button onclick="openMembersModal('${g.id}')" class="w-8 h-8 rounded-full bg-blue-400 text-white text-xs"><i class="fas fa-users"></i></button>
+                                <button onclick="openJoinModal('${g.id}')" class="px-3 py-1 bg-white text-pink-500 rounded-full text-xs font-bold shadow-sm">เข้าร่วม</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
+            others.forEach((g, idx) => {
+                const rank = idx + 4;
+                const rUrls = rankUrlsConfig[rank] || { char: '', badge: '' };
+                othersContainer.innerHTML += `
+                    <div id="guild-${g.id}" class="chibi-card relative flex items-center bg-white rounded-2xl p-3 shadow-sm border-l-[6px]" style="border-left-color: ${g.color};">
+                        <div class="w-10 font-bold text-gray-400 text-xl text-center mr-2">#${rank}</div>
+                        <div class="relative animate-chibi-fast mr-4">
+                            ${rUrls.badge ? `<img src="${rUrls.badge}" class="absolute -top-2 -right-2 w-6 h-6 z-10 glow-badge">` : ''}
+                            ${generateImageElement(rUrls.char, g.logo, 'w-14 h-14')}
+                        </div>
+                        <div class="flex-1"><div class="font-bold text-lg text-gray-800">${g.name}</div></div>
+                        <div class="flex items-center gap-2">
+                            <div class="text-right"><div class="text-lg font-bold text-pink-500 bg-pink-50 px-2 py-1 rounded-lg">${g.score.toLocaleString()}</div></div>
+                            <button onclick="openMembersModal('${g.id}')" class="bg-blue-100 text-blue-500 w-10 h-10 rounded-full flex items-center justify-center"><i class="fas fa-users"></i></button>
+                            <button onclick="openJoinModal('${g.id}')" class="bg-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-user-plus"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function generateImageElement(url, fallback, size) {
+            return `<img src="${url}" class="${size} img-circle-glow" onerror="this.outerHTML='<div class=\\'${size} fallback-emoji\\'>${fallback}</div>'">`;
+        }
+
+        // --- Auth & Modals ---
+        function openPinModal() {
+            // ล้างค่าเก่าก่อนเปิดเสมอ
+            document.getElementById('admin-pin-input').value = '';
+            document.getElementById('pin-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('pin-modal').classList.remove('opacity-0');
+                document.getElementById('pin-modal-content').classList.remove('scale-95');
+                document.getElementById('admin-pin-input').focus();
+            }, 10);
+        }
+
+        function closePinModal() {
+            // ล้างรหัสผ่านทุกครั้งที่ปิดหน้าต่างกรอก PIN
+            document.getElementById('admin-pin-input').value = '';
+            document.getElementById('pin-modal').classList.add('opacity-0');
+            document.getElementById('pin-modal-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('pin-modal').classList.add('hidden'), 300);
+        }
+
+        function verifyPin() {
+            const pinInput = document.getElementById('admin-pin-input');
+            const pin = pinInput.value;
+            if (pin === '0000') {
+                // ล้างรหัสทันทีเมื่อยืนยันสำเร็จก่อนเข้าหน้า Admin
+                pinInput.value = '';
+                closePinModal();
+                showToast("🔓 ปลดล็อกระบบผู้ดูแลสำเร็จ!", "success");
+                setTimeout(openAdminPanel, 300);
+            } else {
+                showToast("❌ รหัส PIN ไม่ถูกต้อง!", "error");
+                pinInput.value = '';
+                pinInput.focus();
+            }
+        }
+
+        function openAdminPanel() {
+            renderAdminPanel();
+            document.getElementById('admin-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('admin-modal').classList.remove('opacity-0');
+                document.getElementById('admin-modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeAdminPanel() {
+            // ล้างรหัสผ่าน (ถ้ามีค้างใน Input) ทุกครั้งที่ปิดหน้าต่าง Admin หลัก
+            document.getElementById('admin-pin-input').value = '';
+            document.getElementById('admin-modal').classList.add('opacity-0');
+            document.getElementById('admin-modal-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('admin-modal').classList.add('hidden'), 300);
+        }
+
+        function switchTab(tab) {
+            ['manage', 'urls', 'add'].forEach(t => {
+                document.getElementById(`panel-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = 'flex-1 py-3 px-2 font-semibold text-gray-500 hover:bg-gray-50';
+            });
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = 'flex-1 py-3 px-2 font-semibold text-pink-600 border-b-4 border-pink-400 bg-pink-50/50';
+        }
+
+        function renderAdminPanel() {
+            const mC = document.getElementById('panel-manage');
+            const uC = document.getElementById('panel-urls');
+            mC.innerHTML = ''; uC.innerHTML = '';
+            const sorted = [...guildsData].sort((a, b) => b.score - a.score);
+
+            sorted.forEach((g, idx) => {
+                const rank = idx + 1;
+                const rUrl = rankUrlsConfig[rank]?.char || '';
+                mC.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl border flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-gray-400 font-bold w-6">#${rank}</span>
+                            ${generateImageElement(rUrl, g.logo, 'w-10 h-10')}
+                            <div class="font-bold text-gray-700">${g.name}</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="exp-input-${g.id}" class="w-16 text-center border rounded p-1" value="100">
+                            <button onclick="modifyExp('${g.id}', true)" class="bg-green-400 text-white w-8 h-8 rounded"><i class="fas fa-plus"></i></button>
+                            <button onclick="modifyExp('${g.id}', false)" class="bg-red-400 text-white w-8 h-8 rounded"><i class="fas fa-minus"></i></button>
+                            <button onclick="deleteGuild('${g.id}', '${g.name}')" class="ml-1 text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            });
+
+            for (let r = 1; r <= Math.max(5, sorted.length); r++) {
+                const rU = rankUrlsConfig[r] || { char: '', badge: '' };
+                const current = sorted[r-1] ? `<span class="text-pink-400 text-xs">(${sorted[r-1].name})</span>` : '';
+                uC.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border space-y-2">
+                        <div class="font-bold text-gray-700">อันดับที่ ${r} ${current}</div>
+                        <div class="space-y-2 text-sm">
+                            <input type="text" id="edit-char-rank-${r}" value="${rU.char}" class="w-full border p-2 rounded" placeholder="URL รูปตัวละคร">
+                            <input type="text" id="edit-badge-rank-${r}" value="${rU.badge}" class="w-full border p-2 rounded" placeholder="URL รูป Badge (ถ้ามี)">
+                            <button onclick="saveRankUrls(${r})" class="w-full bg-blue-500 text-white py-1 rounded">บันทึกอันดับ ${r}</button>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        // --- User Actions ---
+        function openJoinModal(id) {
+            const g = guildsData.find(x => x.id === id);
+            currentJoinGuildId = id;
+            document.getElementById('join-modal-title').innerText = `เข้าร่วมกิลด์ ${g.name}`;
+            document.getElementById('join-modal-emoji').innerText = g.logo || '🛡️';
+            document.getElementById('join-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('join-modal').classList.remove('opacity-0');
+                document.getElementById('join-modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeJoinModal() {
+            document.getElementById('join-modal').classList.add('opacity-0');
+            document.getElementById('join-modal-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('join-modal').classList.add('hidden'), 300);
+        }
+
+        function submitJoinGuild() {
+            const nick = document.getElementById('join-nickname-input').value.trim();
+            if (!nick) return showToast("ใส่ชื่อเล่นด้วยนะ!", "error");
+            if (!guildMembers[currentJoinGuildId]) guildMembers[currentJoinGuildId] = [];
+            guildMembers[currentJoinGuildId].push({ name: nick });
+            localStorage.setItem('chibi_guild_members', JSON.stringify(guildMembers));
+            showToast(`🎉 ยินดีต้อนรับ ${nick}!`, "success");
+            closeJoinModal();
+        }
+
+        function openMembersModal(id) {
+            const g = guildsData.find(x => x.id === id);
+            document.getElementById('members-modal-title').innerText = `สมาชิกกิลด์ ${g.name}`;
+            const list = document.getElementById('members-list-container');
+            list.innerHTML = '';
+            const members = guildMembers[id] || [];
+            if (members.length === 0) list.innerHTML = `<div class="text-center py-4 text-gray-400">ยังไม่มีสมาชิก</div>`;
+            else members.forEach((m, idx) => {
+                list.innerHTML += `<div class="bg-gray-50 p-2 rounded flex gap-2"><span class="text-blue-400">${idx+1}</span> ${m.name}</div>`;
+            });
+            document.getElementById('members-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('members-modal').classList.remove('opacity-0');
+                document.getElementById('members-modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeMembersModal() {
+            document.getElementById('members-modal').classList.add('opacity-0');
+            document.getElementById('members-modal-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('members-modal').classList.add('hidden'), 300);
+        }
+
+        // --- Logic & Feedback ---
         async function modifyExp(id, isAdd) {
             const input = document.getElementById(`exp-input-${id}`);
             const amount = Number(input.value) || 0;
-            const finalAmount = isAdd ? amount : -amount;
-            
             const guild = guildsData.find(g => g.id === id);
-            if (!guild) return;
-
-            guild.score = Math.max(0, guild.score + finalAmount);
-            
-            renderLeaderboard();
-            renderAdminPanel();
-            spawnFloatingExp(id, finalAmount);
-            
+            guild.score = Math.max(0, guild.score + (isAdd ? amount : -amount));
+            renderLeaderboard(); renderAdminPanel();
+            spawnFloatingExp(id, (isAdd ? amount : -amount));
             showToast(isAdd ? `🔥 +${amount} EXP!` : `💥 -${amount} EXP!`, isAdd ? 'exp-up' : 'error');
-            
-            // ส่งไปบันทึกที่ Google Sheets
-            await callAPI({ action: 'updateExp', id: id, score: guild.score });
+            await callAPI({ action: 'updateExp', id, score: guild.score });
         }
 
-        // ตัวอย่างฟังก์ชันบันทึก URL ตามอันดับ
         async function saveRankUrls(rank) {
-            const char = document.getElementById(`edit-char-rank-${rank}`).value;
-            const badge = document.getElementById(`edit-badge-rank-${rank}`).value;
-
+            const char = document.getElementById('edit-char-rank-' + rank).value;
+            const badge = document.getElementById('edit-badge-rank-' + rank).value;
             rankUrlsConfig[rank] = { char, badge };
             renderLeaderboard();
             showToast(`✨ อัปเดตสกินอันดับ ${rank} แล้ว!`);
-            
             await callAPI({ action: 'updateRankUrls', rank, char, badge });
         }
 
         async function submitAddGuild() {
             const name = document.getElementById('add-name').value;
             if (!name) return showToast("ใส่ชื่อกิลด์ด้วยนะ!", "error");
-
-            const newGuild = {
-                id: Date.now().toString(),
-                name: name,
-                score: 0,
-                color: '#FFB6C1', // ระบบจะสุ่มให้ใน GAS
-                logo: '🛡️'
-            };
-
-            guildsData.push(newGuild);
-            renderLeaderboard();
-            showToast("🎉 ก่อตั้งกิลด์ใหม่สำเร็จ!");
-            
-            await callAPI({ action: 'add', data: newGuild });
+            const newG = { id: Date.now().toString(), name, score: 0, color: '#FFB6C1', logo: '🛡️' };
+            guildsData.push(newG); renderLeaderboard();
+            showToast("🎉 สร้างกิลด์สำเร็จ!", "success");
+            await callAPI({ action: 'add', data: newG });
             document.getElementById('add-name').value = '';
+            switchTab('manage');
         }
 
-        // --- ส่วนฟังก์ชัน UI อื่นๆ (render, toast, spawnFloatingExp) ให้ใช้ของเดิมที่คุณมีได้เลยครับ ---
+        async function deleteGuild(id, name) {
+            if (!confirm(`ต้องการลบกิลด์ ${name} ใช่หรือไม่?`)) return;
+            guildsData = guildsData.filter(x => x.id !== id);
+            renderLeaderboard(); renderAdminPanel();
+            showToast(`🗑️ ลบกิลด์ ${name} แล้ว`, "success");
+            await callAPI({ action: 'delete', id });
+        }
+
+        function showToast(msg, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-pink-400';
+            toast.className = `toast-enter ${bg} text-white px-6 py-3 rounded-xl shadow-lg font-bold flex items-center gap-2`;
+            toast.innerHTML = `<i class="fas fa-info-circle"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function spawnFloatingExp(gId, amt) {
+            const card = document.getElementById(`guild-${gId}`);
+            if (!card) return;
+            const el = document.createElement('div');
+            el.className = `floating-exp ${amt >= 0 ? 'text-green-400' : 'text-red-500'}`;
+            el.innerText = (amt >= 0 ? '+' : '') + amt + ' EXP';
+            card.appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        }
     </script>
 </body>
 </html>
