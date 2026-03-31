@@ -856,16 +856,18 @@
             title: `${type === 'add' ? '+ ADD' : '- REMOVE'} EXP: ${team.name}`,
             html: `
               <input id="exp-amt" type="number" class="swal2-input" placeholder="${this.t('expAmount')}">
-              <input id="exp-reason" class="swal2-input" placeholder="${this.t('reason')}">
+              <input id="exp-reason" class="swal2-input" placeholder="${this.t('reason')} (ไม่บังคับ)">
             `,
             showCancelButton: true,
-            confirmButtonText: this.t('submit'),
+            confirmButtonText: `<i class="ph-bold ph-check-circle align-middle mr-1"></i> ${this.t('submit')}`,
+            cancelButtonText: `<i class="ph-bold ph-x-circle align-middle mr-1"></i> ${this.t('cancel')}`,
             preConfirm: () => {
               const amt = Number(document.getElementById('exp-amt').value);
               const reason = document.getElementById('exp-reason').value;
-              if (!amt || amt <= 0) return Swal.showValidationMessage('Valid amount required');
-              if (!reason) return Swal.showValidationMessage('Reason required');
-              return { exp_change: type === 'add' ? amt : -amt, reason, target_team_id: team.id };
+              if (!amt || amt <= 0) return Swal.showValidationMessage('กรุณาระบุจำนวน EXP ให้ถูกต้อง');
+              
+              // หากไม่ใส่เหตุผล จะกำหนดค่าเริ่มต้นเป็น '-'
+              return { exp_change: type === 'add' ? amt : -amt, reason: reason || '-', target_team_id: team.id };
             }
           });
 
