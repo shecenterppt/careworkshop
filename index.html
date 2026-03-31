@@ -257,27 +257,27 @@
             <p class="font-chibi text-lg md:text-xl font-bold text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-slate-800/80 inline-block px-6 py-1 mt-2 rounded-full border-2 border-amber-300 dark:border-slate-600">{{ t('subtitle') }}</p>
           </div>
 
-          <!-- Podium (Top 3) -->
-          <div v-if="teams.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 items-end mt-12 md:mt-24 px-4">
+          <!-- Podium (Top 3) Only show if there are teams with score > 0 -->
+          <div v-if="top3Ranked.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 items-end mt-12 md:mt-24 px-4">
             
             <!-- Rank 2 -->
-            <div v-if="teams.length > 1" class="order-2 md:order-1 flex flex-col items-center animate-float" style="animation-delay: 0.5s;">
+            <div v-if="top3Ranked.length > 1" class="order-2 md:order-1 flex flex-col items-center animate-float" style="animation-delay: 0.5s;">
               <div class="rpg-card w-full max-w-xs p-5 relative flex flex-col items-center text-center border-gray-300 dark:border-gray-600 bg-gradient-to-b from-gray-100 to-white dark:from-gray-800 dark:to-gray-900">
-                <div class="rank-badge bg-gray-300 text-gray-700 border-gray-100" v-show="getEffectiveBadge(teams[1], 2) || Number(teams[1].score) > 0">
-                  <img v-if="getEffectiveBadge(teams[1], 2)" :src="getEffectiveBadge(teams[1], 2)" class="w-full h-full object-cover">
-                  <span v-else-if="Number(teams[1].score) > 0">2</span>
+                <div class="rank-badge bg-gray-300 text-gray-700 border-gray-100">
+                  <img v-if="getEffectiveBadge(top3Ranked[1], 2)" :src="getEffectiveBadge(top3Ranked[1], 2)" class="w-full h-full object-cover">
+                  <span v-else>2</span>
                 </div>
                 <div class="relative mt-3 mb-3">
-                  <img :src="getEffectiveAvatar(teams[1], 2)" @error="$event.target.src='https://ui-avatars.com/api/?name='+teams[1].name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-24 h-24 rounded-full border-4 border-gray-300 object-cover bg-white">
-                  <span v-if="Number(teams[1].score) > 0" class="absolute -bottom-2 -right-2 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-white">No.2</span>
+                  <img :src="getEffectiveAvatar(top3Ranked[1], 2)" @error="$event.target.src='https://ui-avatars.com/api/?name='+top3Ranked[1].name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-24 h-24 rounded-full border-4 border-gray-300 object-cover bg-white">
+                  <span class="absolute -bottom-2 -right-2 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-white">No.2</span>
                 </div>
-                <h3 class="font-chibi font-bold text-xl mb-1 line-clamp-1">{{ teams[1].name }}</h3>
+                <h3 class="font-chibi font-bold text-xl mb-1 line-clamp-1">{{ top3Ranked[1].name }}</h3>
                 <div class="bg-gray-200 dark:bg-gray-800 w-full rounded-full py-1 mb-4 border-2 border-gray-300 dark:border-gray-700">
-                  <p class="text-xl font-black text-gray-600 dark:text-gray-300">{{ teams[1].score }} <span class="text-xs">EXP</span></p>
+                  <p class="text-xl font-black text-gray-600 dark:text-gray-300">{{ top3Ranked[1].score }} <span class="text-xs">EXP</span></p>
                 </div>
                 <div class="flex gap-2 w-full">
-                  <button @click="joinTeamPrompt(teams[1])" class="btn-rpg flex-1 bg-green-500 text-white hover:bg-green-400 border-green-700 h-11">{{ t('joinTeam') }}</button>
-                  <button @click="viewMembers(teams[1])" class="btn-rpg bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-blue-300 dark:border-blue-700 w-11 h-11"><i class="ph-bold ph-users text-lg"></i></button>
+                  <button @click="joinTeamPrompt(top3Ranked[1])" class="btn-rpg flex-1 bg-green-500 text-white hover:bg-green-400 border-green-700 h-11">{{ t('joinTeam') }}</button>
+                  <button @click="viewMembers(top3Ranked[1])" class="btn-rpg bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-blue-300 dark:border-blue-700 w-11 h-11"><i class="ph-bold ph-users text-lg"></i></button>
                 </div>
               </div>
             </div>
@@ -286,59 +286,59 @@
             <!-- Rank 1 -->
             <div class="order-1 md:order-2 flex flex-col items-center animate-float z-10 transform md:scale-110 mb-8 md:mb-0">
               <div class="rpg-card w-full max-w-sm p-6 relative flex flex-col items-center text-center border-yellow-400 bg-gradient-to-b from-yellow-50 to-white dark:from-yellow-900/40 dark:to-gray-900">
-                <div class="rank-badge bg-yellow-400 text-yellow-900 border-yellow-100 w-16 h-16 text-3xl -top-8" v-show="getEffectiveBadge(teams[0], 1) || Number(teams[0].score) > 0">
-                  <img v-if="getEffectiveBadge(teams[0], 1)" :src="getEffectiveBadge(teams[0], 1)" class="w-full h-full object-cover">
-                  <i v-else-if="Number(teams[0].score) > 0" class="ph-fill ph-crown"></i>
+                <div class="rank-badge bg-yellow-400 text-yellow-900 border-yellow-100 w-16 h-16 text-3xl -top-8">
+                  <img v-if="getEffectiveBadge(top3Ranked[0], 1)" :src="getEffectiveBadge(top3Ranked[0], 1)" class="w-full h-full object-cover">
+                  <i v-else class="ph-fill ph-crown"></i>
                 </div>
                 <div class="relative mt-4 mb-4">
                   <!-- Glow effect behind avatar -->
                   <div class="absolute inset-0 bg-yellow-400 blur-md rounded-full opacity-50 animate-pulse"></div>
-                  <img :src="getEffectiveAvatar(teams[0], 1)" @error="$event.target.src='https://ui-avatars.com/api/?name='+teams[0].name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="relative w-32 h-32 rounded-full border-4 border-yellow-400 object-cover bg-white z-10">
-                  <span v-if="Number(teams[0].score) > 0" class="absolute -bottom-2 -right-2 bg-yellow-600 text-white text-sm font-bold px-3 py-1 rounded-full border-2 border-white z-20 shadow-sm">No.1</span>
+                  <img :src="getEffectiveAvatar(top3Ranked[0], 1)" @error="$event.target.src='https://ui-avatars.com/api/?name='+top3Ranked[0].name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="relative w-32 h-32 rounded-full border-4 border-yellow-400 object-cover bg-white z-10">
+                  <span class="absolute -bottom-2 -right-2 bg-yellow-600 text-white text-sm font-bold px-3 py-1 rounded-full border-2 border-white z-20 shadow-sm">No.1</span>
                 </div>
-                <h3 class="font-chibi font-black text-2xl mb-2 text-yellow-700 dark:text-yellow-400">{{ teams[0].name }}</h3>
+                <h3 class="font-chibi font-black text-2xl mb-2 text-yellow-700 dark:text-yellow-400">{{ top3Ranked[0].name }}</h3>
                 <div class="bg-yellow-100 dark:bg-yellow-900/50 w-full rounded-full py-2 mb-5 border-2 border-yellow-300 dark:border-yellow-700">
-                  <p class="text-2xl font-black text-yellow-600 dark:text-yellow-400">{{ teams[0].score }} <span class="text-sm">EXP</span></p>
+                  <p class="text-2xl font-black text-yellow-600 dark:text-yellow-400">{{ top3Ranked[0].score }} <span class="text-sm">EXP</span></p>
                 </div>
                 <div class="flex gap-2 w-full">
-                  <button @click="joinTeamPrompt(teams[0])" class="btn-rpg flex-1 bg-gradient-to-b from-yellow-400 to-amber-500 text-white hover:from-yellow-300 hover:to-amber-400 border-amber-600 h-12 text-lg">{{ t('joinTeam') }}</button>
-                  <button @click="viewMembers(teams[0])" class="btn-rpg bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-blue-300 dark:border-blue-700 w-12 h-12"><i class="ph-bold ph-users text-xl"></i></button>
+                  <button @click="joinTeamPrompt(top3Ranked[0])" class="btn-rpg flex-1 bg-gradient-to-b from-yellow-400 to-amber-500 text-white hover:from-yellow-300 hover:to-amber-400 border-amber-600 h-12 text-lg">{{ t('joinTeam') }}</button>
+                  <button @click="viewMembers(top3Ranked[0])" class="btn-rpg bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-blue-300 dark:border-blue-700 w-12 h-12"><i class="ph-bold ph-users text-xl"></i></button>
                 </div>
               </div>
             </div>
 
             <!-- Rank 3 -->
-            <div v-if="teams.length > 2" class="order-3 md:order-3 flex flex-col items-center animate-float" style="animation-delay: 1s;">
+            <div v-if="top3Ranked.length > 2" class="order-3 md:order-3 flex flex-col items-center animate-float" style="animation-delay: 1s;">
               <div class="rpg-card w-full max-w-xs p-5 relative flex flex-col items-center text-center border-amber-600 dark:border-amber-800 bg-gradient-to-b from-orange-50 to-white dark:from-orange-900/30 dark:to-gray-900">
-                <div class="rank-badge bg-amber-600 text-white border-orange-200" v-show="getEffectiveBadge(teams[2], 3) || Number(teams[2].score) > 0">
-                  <img v-if="getEffectiveBadge(teams[2], 3)" :src="getEffectiveBadge(teams[2], 3)" class="w-full h-full object-cover">
-                  <span v-else-if="Number(teams[2].score) > 0">3</span>
+                <div class="rank-badge bg-amber-600 text-white border-orange-200">
+                  <img v-if="getEffectiveBadge(top3Ranked[2], 3)" :src="getEffectiveBadge(top3Ranked[2], 3)" class="w-full h-full object-cover">
+                  <span v-else>3</span>
                 </div>
                 <div class="relative mt-3 mb-3">
-                  <img :src="getEffectiveAvatar(teams[2], 3)" @error="$event.target.src='https://ui-avatars.com/api/?name='+teams[2].name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-24 h-24 rounded-full border-4 border-amber-600 object-cover bg-white">
-                  <span v-if="Number(teams[2].score) > 0" class="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-white">No.3</span>
+                  <img :src="getEffectiveAvatar(top3Ranked[2], 3)" @error="$event.target.src='https://ui-avatars.com/api/?name='+top3Ranked[2].name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-24 h-24 rounded-full border-4 border-amber-600 object-cover bg-white">
+                  <span class="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-white">No.3</span>
                 </div>
-                <h3 class="font-chibi font-bold text-xl mb-1 line-clamp-1">{{ teams[2].name }}</h3>
+                <h3 class="font-chibi font-bold text-xl mb-1 line-clamp-1">{{ top3Ranked[2].name }}</h3>
                 <div class="bg-orange-100 dark:bg-orange-900/50 w-full rounded-full py-1 mb-4 border-2 border-orange-300 dark:border-orange-800">
-                  <p class="text-xl font-black text-amber-600 dark:text-amber-500">{{ teams[2].score }} <span class="text-xs">EXP</span></p>
+                  <p class="text-xl font-black text-amber-600 dark:text-amber-500">{{ top3Ranked[2].score }} <span class="text-xs">EXP</span></p>
                 </div>
                 <div class="flex gap-2 w-full">
-                  <button @click="joinTeamPrompt(teams[2])" class="btn-rpg flex-1 bg-green-500 text-white hover:bg-green-400 border-green-700 h-11">{{ t('joinTeam') }}</button>
-                  <button @click="viewMembers(teams[2])" class="btn-rpg bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-blue-300 dark:border-blue-700 w-11 h-11"><i class="ph-bold ph-users text-lg"></i></button>
+                  <button @click="joinTeamPrompt(top3Ranked[2])" class="btn-rpg flex-1 bg-green-500 text-white hover:bg-green-400 border-green-700 h-11">{{ t('joinTeam') }}</button>
+                  <button @click="viewMembers(top3Ranked[2])" class="btn-rpg bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-blue-300 dark:border-blue-700 w-11 h-11"><i class="ph-bold ph-users text-lg"></i></button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Rest of the Teams (List/Grid) -->
+          <!-- Rest of the Teams (Horizontal List) -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div v-for="(team, index) in teams.slice(3)" :key="team.id" class="rpg-card p-3 flex items-center gap-3 hover:bg-white/50 dark:hover:bg-black/20">
+            <div v-for="team in restTeams" :key="team.id" class="rpg-card p-3 flex items-center gap-3 hover:bg-white/50 dark:hover:bg-black/20">
               <div class="font-chibi font-black text-2xl text-gray-400 dark:text-gray-500 w-10 text-center flex items-center justify-center">
-                <img v-if="getEffectiveBadge(team, index + 4)" :src="getEffectiveBadge(team, index + 4)" class="w-10 h-10 object-contain">
-                <span v-else-if="Number(team.score) > 0">#{{ index + 4 }}</span>
+                <img v-if="getEffectiveBadge(team, team.rank)" :src="getEffectiveBadge(team, team.rank)" class="w-10 h-10 object-contain">
+                <span v-else-if="team.rank > 0">#{{ team.rank }}</span>
               </div>
               <div class="relative">
-                <img :src="getEffectiveAvatar(team, index + 4)" @error="$event.target.src='https://ui-avatars.com/api/?name='+team.name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-14 h-14 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white object-cover">
+                <img :src="getEffectiveAvatar(team, team.rank)" @error="$event.target.src='https://ui-avatars.com/api/?name='+team.name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-14 h-14 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white object-cover">
               </div>
               <div class="flex-1 min-w-0">
                 <h4 class="font-chibi font-bold text-lg leading-tight truncate">{{ team.name }}</h4>
@@ -360,8 +360,8 @@
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div v-for="team in teams" :key="'admin'+team.id" class="rpg-card p-4 rounded-xl flex flex-col md:flex-row items-center gap-4">
-              <img :src="getEffectiveAvatar(team, teams.findIndex(t => t.id === team.id) + 1)" @error="$event.target.src='https://ui-avatars.com/api/?name='+team.name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-16 h-16 rounded-full bg-black/10 p-1 border-2 border-gray-300 dark:border-slate-600 object-cover">
+            <div v-for="team in processedTeams" :key="'admin'+team.id" class="rpg-card p-4 rounded-xl flex flex-col md:flex-row items-center gap-4">
+              <img :src="getEffectiveAvatar(team, team.rank)" @error="$event.target.src='https://ui-avatars.com/api/?name='+team.name+'&background=f59e0b&color=fff'; $event.target.onerror=null;" class="w-16 h-16 rounded-full bg-black/10 p-1 border-2 border-gray-300 dark:border-slate-600 object-cover">
               <div class="flex-1 text-center md:text-left w-full">
                 <div class="flex items-center justify-center md:justify-start gap-2">
                   <h4 class="font-bold text-lg">{{ team.name }}</h4>
@@ -381,7 +381,7 @@
         </div>
 
         <!-- ADMIN: LOGS -->
-        <div v-show="activeTab === 'adminLogs' && isAdmin" class="rpg-card rounded-xl p-4 md:p-6 overflow-x-auto">
+        <div v-show="activeTab === 'adminLogs' && isAdmin" class="rpg-card rounded-xl p-4 md:p-6 overflow-x-auto text-slate-800 dark:text-white">
           <h2 class="text-2xl font-bold mb-6">{{ t('logs') }}</h2>
           <table class="w-full text-left border-collapse">
             <thead>
@@ -406,20 +406,20 @@
           
           <!-- Pagination -->
           <div class="flex justify-between items-center mt-6">
-            <button @click="logPage--" :disabled="logPage === 1" class="px-4 py-2 bg-gray-200 dark:bg-slate-800 rounded disabled:opacity-30 font-bold border-b-2 border-gray-300 dark:border-slate-900">Prev</button>
+            <button @click="logPage--" :disabled="logPage === 1" class="px-4 py-2 bg-gray-200 dark:bg-slate-800 text-slate-800 dark:text-white rounded disabled:opacity-30 font-bold border-b-2 border-gray-300 dark:border-slate-900">Prev</button>
             <span class="font-bold font-chibi">Page {{ logPage }} of {{ maxLogPage || 1 }}</span>
-            <button @click="logPage++" :disabled="logPage >= maxLogPage" class="px-4 py-2 bg-gray-200 dark:bg-slate-800 rounded disabled:opacity-30 font-bold border-b-2 border-gray-300 dark:border-slate-900">Next</button>
+            <button @click="logPage++" :disabled="logPage >= maxLogPage" class="px-4 py-2 bg-gray-200 dark:bg-slate-800 text-slate-800 dark:text-white rounded disabled:opacity-30 font-bold border-b-2 border-gray-300 dark:border-slate-900">Next</button>
           </div>
         </div>
 
         <!-- ADMIN: SETTINGS -->
-        <div v-show="activeTab === 'adminSettings' && isAdmin">
+        <div v-show="activeTab === 'adminSettings' && isAdmin" class="text-slate-800 dark:text-white">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold font-chibi">{{ t('settings') }}</h2>
           </div>
           
           <div class="grid grid-cols-1 gap-4">
-            <div v-for="setting in rankSettings" :key="'rank'+setting.rank" class="rpg-card p-4 flex flex-col md:flex-row items-center gap-6">
+            <div v-for="setting in rankSettings" :key="'rank'+setting.rank" class="rpg-card p-4 flex flex-col md:flex-row items-center gap-6 text-slate-800 dark:text-white">
               <!-- Rank Number -->
               <div class="flex-shrink-0 flex flex-col items-center">
                 <div class="w-16 h-16 flex items-center justify-center bg-gray-200 dark:bg-gray-800 rounded-full border-4 border-gray-300 dark:border-gray-600 font-chibi font-black text-2xl shadow-inner">
@@ -561,6 +561,19 @@
         };
       },
       computed: {
+        processedTeams() {
+          // หากคะแนน > 0 ถึงจะได้ Rank / หาก <= 0 จะถูกปรับ Rank เป็น 0 เพื่อซ่อนอันดับ
+          return this.teams.map((t, index) => {
+            let rank = Number(t.score) > 0 ? index + 1 : 0;
+            return { ...t, rank: rank };
+          });
+        },
+        top3Ranked() {
+          return this.processedTeams.filter(t => t.rank > 0 && t.rank <= 3);
+        },
+        restTeams() {
+          return this.processedTeams.filter(t => t.rank === 0 || t.rank > 3);
+        },
         paginatedLogs() {
           const start = (this.logPage - 1) * this.logsPerPage;
           return this.logs.slice(start, start + this.logsPerPage);
@@ -731,6 +744,7 @@
 
         async joinTeamPrompt(team) {
           this.playSound('click');
+          if (!team) return; // ป้องกันการเกิด error หากข้อมูลทีมโหลดไม่ขึ้น
           
           // ดึงรูปอวตารของทีม (ดึงรูปตาม Rank ใหม่ที่คำนวณไว้แล้ว)
           const tIndex = this.processedTeams.findIndex(t => t.id === team.id);
@@ -743,7 +757,7 @@
               <div class="flex flex-col items-center mb-6 mt-2">
                 <div class="relative mb-3">
                   <div class="absolute inset-0 bg-amber-400 blur-md rounded-full opacity-40 animate-pulse"></div>
-                  <img src="${avatarToUse}" class="relative w-24 h-24 rounded-full border-4 border-amber-400 object-cover bg-white z-10" onerror="this.src='https://ui-avatars.com/api/?name=${team.name}&background=f59e0b&color=fff'">
+                  <img src="${avatarToUse}" class="relative w-24 h-24 rounded-full border-4 border-amber-400 object-cover bg-white z-10" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(team.name)}&background=f59e0b&color=fff'">
                 </div>
                 <h3 class="font-chibi font-black text-2xl text-amber-600 dark:text-amber-400">${team.name}</h3>
               </div>
