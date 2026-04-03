@@ -464,7 +464,7 @@
     const dictionary = {
       th: {
         loading: "กำลังโหลดข้อมูลดินแดน...",
-        leaderboard: "กระดานทีมผู้นำ",
+        leaderboard: "กระดานผู้นำ",
         subtitle: "ศึกชิงความเป็นหนึ่งแห่ง CARE Workshop",
         joinTeam: "เข้าร่วมทีม",
         viewMembers: "ดูสมาชิก",
@@ -726,7 +726,7 @@
               members.forEach(m => {
                 html += `<div class="p-2 border-b border-gray-500/20 flex justify-between">
                   <span><b>${m.nickname}</b> (${m.plant})</span>
-                  <span class="opacity-50 text-sm">${m.emp_id.substring(0,3)}****</span>
+                  <span class="opacity-50 text-sm">${String(m.emp_id).substring(0,3)}****</span>
                 </div>`;
               });
             }
