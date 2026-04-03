@@ -391,6 +391,7 @@
                 <th class="p-3">Team ID</th>
                 <th class="p-3">Details</th>
                 <th class="p-3">EXP</th>
+                <th class="p-3 text-center" v-if="adminRole === 'super'">จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -400,6 +401,14 @@
                 <td class="p-3 text-sm">{{ log.team_id }}</td>
                 <td class="p-3">{{ log.details }}</td>
                 <td class="p-3 font-bold" :class="log.exp_change > 0 ? 'text-green-500' : (log.exp_change < 0 ? 'text-red-500' : '')">{{ log.exp_change }}</td>
+                <td class="p-3 flex justify-center gap-2" v-if="adminRole === 'super'">
+                  <button @click="adminEditLog(log)" class="text-blue-500 hover:text-blue-700 bg-blue-100 dark:bg-blue-900/50 p-2 rounded-md transition" title="แก้ไข">
+                    <i class="ph-bold ph-pencil-simple"></i>
+                  </button>
+                  <button @click="adminDeleteLog(log)" class="text-red-500 hover:text-red-700 bg-red-100 dark:bg-red-900/50 p-2 rounded-md transition" title="ลบ">
+                    <i class="ph-bold ph-trash"></i>
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -649,9 +658,9 @@
         
         async fetchAPI(action, payload = {}) {
           try {
-            // สำหรับการดึงข้อมูล (Read) ให้ใช้ GET และแนบพารามิเตอร์ไปกับ URL
+            // สำหรับการดึงข้อมูล (Read) ให้ใช้ GET และแนบพารามิเตอร์ไปกับ URL ป้องกันการ Cache
             if (action.startsWith('get')) {
-              let url = `${API_URL}?action=${action}`;
+              let url = `${API_URL}?action=${action}&_t=${new Date().getTime()}`;
               for (const key in payload) {
                 url += `&${key}=${encodeURIComponent(payload[key])}`;
               }
@@ -977,6 +986,73 @@
               Swal.fire('Deleted', '', 'success');
               this.loadData();
             } catch(e) {
+              Swal.fire('Error', e.message, 'error');
+            }
+          }
+        },
+
+        async adminEditLog(log) {
+          const { value: form } = await Swal.fire({
+            title: 'แก้ไขบันทึกกิจกรรม',
+            html: `
+              <div class="text-left w-[85%] mx-auto mt-4">
+                <label class="text-sm font-bold opacity-70 ml-1">รายละเอียด (Details)</label>
+                <input id="swal-log-details" class="swal2-input !m-0 !mb-4" value="${log.details || ''}">
+                <label class="text-sm font-bold opacity-70 ml-1">คะแนน (EXP Change)</label>
+                <input id="swal-log-exp" type="number" class="swal2-input !m-0" value="${log.exp_change || 0}">
+              </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: `<i class="ph-bold ph-check-circle align-middle mr-1"></i> บันทึก`,
+            cancelButtonText: `<i class="ph-bold ph-x-circle align-middle mr-1"></i> ยกเลิก`,
+            preConfirm: () => {
+              return {
+                timestamp: log.timestamp,
+                new_details: document.getElementById('swal-log-details').value,
+                new_exp_change: Number(document.getElementById('swal-log-exp').value),
+                old_exp_change: Number(log.exp_change || 0),
+                team_id: log.team_id
+              }
+            }
+          });
+
+          if (form) {
+            Swal.fire({ title: 'Updating...', didOpen: () => Swal.showLoading() });
+            try {
+              await this.fetchAPI('editLog', form);
+              this.playSound('success');
+              Swal.fire('Updated', 'อัปเดตบันทึกกิจกรรมสำเร็จ', 'success');
+              this.refreshData(); // โหลดใหม่เพื่อให้คะแนนและ Logs ซิงก์กัน
+            } catch(e) {
+              this.playSound('error');
+              Swal.fire('Error', e.message, 'error');
+            }
+          }
+        },
+
+        async adminDeleteLog(log) {
+          const { isConfirmed } = await Swal.fire({
+            title: `ลบบันทึกกิจกรรมนี้?`,
+            text: log.details,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ลบข้อมูล'
+          });
+
+          if (isConfirmed) {
+            Swal.fire({ title: 'Deleting...', didOpen: () => Swal.showLoading() });
+            try {
+              await this.fetchAPI('deleteLog', {
+                timestamp: log.timestamp,
+                team_id: log.team_id,
+                exp_change: log.exp_change
+              });
+              this.playSound('success');
+              Swal.fire('Deleted', 'ลบข้อมูลเรียบร้อย', 'success');
+              this.refreshData(); // โหลดใหม่เพื่อให้คะแนนและ Logs ซิงก์กัน
+            } catch(e) {
+              this.playSound('error');
               Swal.fire('Error', e.message, 'error');
             }
           }
